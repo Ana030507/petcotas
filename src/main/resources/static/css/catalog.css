@@ -1,0 +1,256 @@
+@charset "UTF-8";
+
+.catalog-container{
+  max-width: 1100px;
+  margin: 40px auto;
+  padding: 20px;
+  position: relative;
+  z-index: 2;
+}
+
+.catalog-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  color:#6a3144;
+  margin-bottom: 18px;
+}
+
+.add-section{
+  background: rgba(255,255,255,0.92);
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.cards-grid{
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 18px;
+}
+
+.card{
+  background: rgba(255,255,255,0.95);
+  border-radius:12px;
+  overflow:hidden;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  display:flex;
+  flex-direction:column;
+}
+
+.card-image img{
+  width:100%;
+  height:160px;
+  object-fit:cover;
+}
+
+.card-body{
+  padding:12px;
+  flex:1;
+}
+
+.card-body h3{
+  margin:0 0 8px 0;
+  color:#7c4a3b;
+}
+
+.card-body .short{
+  color:#8f6a5a;
+  font-size:14px;
+  min-height:36px;
+}
+
+.card-actions{
+  margin-top:10px;
+  display:flex;
+  gap:8px;
+}
+
+.btn-main.small{
+  padding:6px 10px;
+  font-size:14px;
+  width:auto;
+}
+
+.btn-admin.small{
+  padding:6px 10px;
+  font-size:14px;
+  width:auto;
+}
+
+.details{
+  padding: 10px 12px;
+  border-top: 1px solid #eee;
+  background: #fffdfd;
+  max-height: 0;           /* cerrada por defecto */
+  overflow: hidden;        /* oculta contenido cuando está cerrada */
+  transition: max-height 0.32s ease, padding 0.2s ease;
+}
+
+.details.show {
+  max-height: 800px;       /* suficiente para tu contenido; ajusta si hace falta */
+  padding: 10px 12px;      /* mantiene padding cuando está abierta */
+}
+/* ===== Header admin: fondo blanco semi-transparente, botones y nombre ===== */
+.catalog-header{
+  background: rgba(255,255,255,0.88);  /* blanco semi-transparente */
+  padding: 18px 22px;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  z-index: 3; /* encima del fondo */
+}
+
+/* Mantener título grande pero algo más espacioso */
+.catalog-header h1{
+  font-size: 30px;       /* mantiene gran tamaño */
+  margin: 0;
+  color: #6a3144;        /* marrón cálido */
+  font-family: 'Playfair Display', serif;
+  letter-spacing: 0.2px;
+}
+
+/* Contenedor de usuario/acciones a la derecha */
+.catalog-header .user-action{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Nombre del admin: más grande y visible */
+.catalog-header .user-action span,
+.catalog-header .user-action .admin-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #4b3028;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(244,226,218,0.6); /* suave fondo para destacar */
+}
+
+/* Botón de salir (form button) estilo coherente con botones principales */
+.catalog-header .user-action form button,
+.catalog-header .user-action .return-link {
+  background-color: #b48b7e;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+/* Hover del botón salir */
+.catalog-header .user-action form button:hover,
+.catalog-header .user-action .return-link:hover {
+  background-color: #a17264;
+}
+
+/* Si el logout está implementado como <a class="return-link"> */
+.catalog-header .user-action .return-link {
+  display: inline-block;
+}
+
+/* Adaptación en pantallas pequeñas */
+@media (max-width: 700px) {
+  .catalog-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .catalog-header .user-action {
+    align-self: stretch;
+    justify-content: space-between;
+    width: 100%;
+  }
+}
+
+/* === Formulario Agregar Receta === */
+.add-section {
+  display: flex;
+  justify-content: center;
+  margin: 3rem 0;
+}
+
+.add-card {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+  width: 100%;
+  max-width: 600px;
+}
+
+.add-card h2 {
+  text-align: center;
+  color: #444;
+  margin-bottom: 1.5rem;
+  font-size: 1.6rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #555;
+}
+
+.add-card input[type="text"],
+.add-card textarea,
+.add-card input[type="file"] {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 0.8rem;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.add-card input[type="text"]:focus,
+.add-card textarea:focus {
+  border-color: #82b366; /* verde suave */
+  outline: none;
+}
+
+.btn-main {
+  background-color: #82b366;
+  color: white;
+  border: none;
+  padding: 0.9rem 1.2rem;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  transition: background-color 0.3s;
+}
+
+.btn-main:hover {
+  background-color: #6fa153;
+}
+
+@media (max-width: 600px) {
+  .add-card {
+    padding: 1.5rem;
+  }
+  
+  .grid-section h2 {
+  display: inline-block;
+  color: #3c2b28;                        /* color del texto dentro del pill (tono cálido) */
+  background: rgba(255,255,255,0.92);   /* fondo claro para garantizar contraste */
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 700;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  margin-bottom: 1rem;
+}
+  
+}
+

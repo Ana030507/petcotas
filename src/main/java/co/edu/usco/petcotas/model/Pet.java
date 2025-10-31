@@ -1,0 +1,68 @@
+package co.edu.usco.petcotas.model;
+
+import jakarta.persistence.*;
+import lombok.*;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+
+/**
+ * Entidad Pet — representa una mascota disponible o adoptada.
+ */
+@Entity
+@Table(name = "pets")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Pet {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, length = 100)
+    private String name; // Nombre de la mascota
+
+    @Column(nullable = false, length = 50)
+    private String type; // Ejemplo: "Perro", "Gato"
+
+    @Column(length = 50)
+    private String size; // Pequeño, Mediano, Grande
+
+    @Column(nullable = false, length = 20)
+    private String age; // "2 años", "6 meses"
+
+    @Column(nullable = false, length = 20)
+    private String status; // "available" o "adopted"
+
+    @Column(length = 255)
+    private String shortDescription;
+
+    @Column(columnDefinition = "TEXT", length = 2000)
+    private String fullDescription;
+
+    @Column(length = 255, nullable = false)
+    private String mainImage; // ruta de imagen principal
+
+    private LocalDateTime createdAt;
+
+    /**
+     * Relación 1:N con PetImage — galería de fotos de la mascota.
+     */
+    @OneToMany(mappedBy = "pet", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PetImage> images = new ArrayList<>();
+
+    
+    // Usuario que adoptó la mascota (puede ser null)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "adopted_by_id")
+    private UserEntity adoptedBy;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        if (this.status == null) this.status = "available";
+    }
+}

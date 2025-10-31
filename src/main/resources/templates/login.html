@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sabor que Inspira</title>
+  <link rel="stylesheet" th:href="@{/css/login.css}" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500&family=Poppins:wght@300;400&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="background"></div>
+
+  <div class="login-box">
+    <h1>Sabor que Inspira</h1>
+    <p>Inicia sesión para ver las mejores recetas</p>
+
+    <form th:action="@{/login}" method="post" autocomplete="off">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+      <input type="text" name="username" placeholder="Usuario" required />
+      <input type="password" name="password" placeholder="Contraseña" required />
+
+      <button type="submit" class="btn-main">Iniciar sesión</button>
+    </form>
+
+    <div class="divider"></div>
+
+    <a th:href="@{/register}" class="btn-register">Registrarse</a>
+
+  </div>
+</body>
+</html>

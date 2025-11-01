@@ -4,11 +4,13 @@ import jakarta.persistence.*;
 import lombok.*;
 
 /**
- * Entidad UserEntity con Lombok.
- * Versión simplificada: solo username, passwordHash, profileImageUrl, role e id.
+ * Entidad UserEntity — versión con campo email (opcional) y username.
  */
 @Entity
-@Table(name = "users")
+@Table(name = "users", indexes = {
+    @Index(columnList = "username", name = "idx_users_username"),
+    @Index(columnList = "email", name = "idx_users_email")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -16,17 +18,20 @@ import lombok.*;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class UserEntity {
 
-    // PK
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @EqualsAndHashCode.Include
     private Long id;
 
-    // Username obligatorio (será el identificador para login)
+    // Username obligatorio (identificador para login clásico)
     @Column(nullable = false, unique = true, length = 100)
     private String username;
 
-    // Hash de la contraseña (BCrypt u otro). Excluido de toString por seguridad.
+    // Email opcional (se usará para OAuth y notificaciones)
+    @Column(nullable = true, unique = true, length = 150)
+    private String email;
+
+    // Hash de la contraseña (BCrypt). No mostrar en toString.
     @ToString.Exclude
     @Column(nullable = false, length = 200)
     private String passwordHash;
@@ -35,14 +40,9 @@ public class UserEntity {
     @Column(length = 500)
     private String profileImageUrl;
 
-    // Relación con role (ROLE_USER, ROLE_ADMIN)
+    // Rol del usuario (ROLE_USER, ROLE_ADMIN)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id")
     @ToString.Exclude
     private Role role;
-
-    /*
-     * Nota: eliminé createdAt, email, fullName y su @PrePersist según lo solicitaste.
-     * Si quieres mantener una fecha de creación, podemos reintroducir createdAt más adelante.
-     */
 }

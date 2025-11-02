@@ -34,9 +34,16 @@ public class Pet {
     @Column(nullable = false, length = 20)
     private String age; // "2 años", "6 meses"
 
-    @Column(nullable = false, length = 20)
-    private String status; // "available" o "adopted"
-
+   
+    /**
+     * Ahora es relación ManyToOne con la tabla statuses.
+     * Fetch EAGER para poder leer status.getName() sin LazyInitialization problems.
+     */
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    @JoinColumn(name = "status_id")
+    private Status status;
+    
+    
     @Column(length = 255)
     private String shortDescription;
 
@@ -63,6 +70,5 @@ public class Pet {
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
-        if (this.status == null) this.status = "available";
     }
 }

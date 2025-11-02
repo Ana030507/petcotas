@@ -2,7 +2,7 @@ package co.edu.usco.petcotas.security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -10,20 +10,30 @@ import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 
+/**
+ * Servicio para generar y validar tokens JWT.
+ * Usa valores definidos en application.properties con prefijo "jwt".
+ */
 @Component
+@ConfigurationProperties(prefix = "jwt")
 public class JwtService {
 
-    private final Key signingKey;
-    private final long expirationMs;
+    private String secret;
+    private long expirationMs;
 
-    public JwtService(
-            @Value("${jwt.secret}") String secret,
-            @Value("${jwt.expiration.ms}") long expirationMs) {
-        this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-        this.expirationMs = expirationMs;
+    // --- GETTERS Y SETTERS obligatorios para @ConfigurationProperties ---
+    public String getSecret() { return secret; }
+    public void setSecret(String secret) { this.secret = secret; }
+
+    public long getExpirationMs() { return expirationMs; }
+    public void setExpirationMs(long expirationMs) { this.expirationMs = expirationMs; }
+
+    // --- Métodos principales ---
+    private Key getSigningKey() {
+        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    // Genera token usando el username
+    /** Genera un token JWT con el username y fecha de expiración configurada */
     public String generateToken(String username) {
         Date now = new Date();
         Date exp = new Date(now.getTime() + expirationMs);
@@ -32,11 +42,11 @@ public class JwtService {
                 .setSubject(username)
                 .setIssuedAt(now)
                 .setExpiration(exp)
-                .signWith(signingKey, SignatureAlgorithm.HS256)
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    // Extrae el username del token
+    /** Extrae el username del token (subject) */
     public String extractUsername(String token) {
         try {
             return parseClaims(token).getSubject();
@@ -45,7 +55,7 @@ public class JwtService {
         }
     }
 
-    // Verifica que el token sea válido para ese userDetails (username igual y no expirado)
+    /** Verifica si el token es válido para el usuario (coincide username y no está expirado) */
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
         return username != null
@@ -53,16 +63,16 @@ public class JwtService {
                 && !isTokenExpired(token);
     }
 
-    // Comprueba expiración
+    /** Comprueba si el token ha expirado */
     private boolean isTokenExpired(String token) {
         Date expiration = parseClaims(token).getExpiration();
         return expiration.before(new Date());
     }
 
-    // Helper: parsea claims o lanza JwtException
+    /** Parsea los claims del token y lanza excepción si es inválido */
     private Claims parseClaims(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(signingKey)
+                .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody();

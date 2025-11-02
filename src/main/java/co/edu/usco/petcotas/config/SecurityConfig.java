@@ -30,9 +30,11 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                     "/api/auth/**",
+                    "/api/pets/**",
                     "/api/test/public",
                     "/swagger-ui/**",
-                    "/v3/api-docs/**"
+                    "/v3/api-docs/**",
+                    "/assets/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             )

@@ -67,20 +67,4 @@ public class PetController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Cambiar estado: acepta statusId o statusName (ambos opcionales; si no se pasan se aplica default).
-     * Ejemplos:
-     * PATCH /api/pets/5/status?statusId=2
-     * PATCH /api/pets/5/status?statusName=Adoptado
-     */
-    @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<PetDetailDto> changeStatus(
-            @PathVariable Long id,
-            @RequestParam(required = false) Long statusId,
-            @RequestParam(required = false) String statusName
-    ) {
-        PetDetailDto updated = petService.changeStatus(id, statusId, statusName);
-        return ResponseEntity.ok(updated);
-    }
 }

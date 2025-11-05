@@ -120,25 +120,12 @@ public class PetService {
         petRepository.delete(pet);
     }
 
-    /**
-     * Cambia status usando statusId o statusName (si ambos se pasan, se prioriza statusId).
-     */
-    public PetDetailDto changeStatus(Long id, Long statusId, String statusName) {
-        Pet pet = petRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mascota no encontrada"));
-
-        Status s = resolveStatus(statusId, statusName);
-        pet.setStatus(s);
-        Pet saved = petRepository.save(pet);
-        return PetMapper.toDetail(saved);
-    }
-
     /* ---------------- helper methods ---------------- */
 
     /**
      * Resuelve Status a partir de id o nombre. Si ambos son null, intenta obtener
-     * un status por defecto (buscando "Disponible" o "Available" y si no encuentra,
-     * toma el primer status en la tabla).
+     * un status por defecto: primero "available", luego "disponible", y si no encuentra,
+     * toma el primer status en la tabla.
      */
     private Status resolveStatus(Long statusId, String statusName) {
         if (statusId != null) {
@@ -152,11 +139,10 @@ public class PetService {
         }
 
         // No id ni name: buscar un status por defecto
-        // Primero intentamos "Disponible" (español), luego "Available" (inglés), sino el primer status.
-        Optional<Status> maybe = statusRepository.findByNameIgnoreCase("Disponible");
+        Optional<Status> maybe = statusRepository.findByNameIgnoreCase("available");
         if (maybe.isPresent()) return maybe.get();
 
-        maybe = statusRepository.findByNameIgnoreCase("Available");
+        maybe = statusRepository.findByNameIgnoreCase("disponible");
         if (maybe.isPresent()) return maybe.get();
 
         return statusRepository.findAll().stream()

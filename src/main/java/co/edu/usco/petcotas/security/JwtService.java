@@ -5,6 +5,8 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
@@ -17,6 +19,8 @@ import java.util.Date;
 @Component
 @ConfigurationProperties(prefix = "jwt")
 public class JwtService {
+
+    private static final Logger log = LoggerFactory.getLogger(JwtService.class);
 
     private String secret;
     private long expirationMs;
@@ -38,6 +42,8 @@ public class JwtService {
         Date now = new Date();
         Date exp = new Date(now.getTime() + expirationMs);
 
+        log.info("🔐 Generando token para usuario: {}", username);
+
         return Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(now)
@@ -51,6 +57,7 @@ public class JwtService {
         try {
             return parseClaims(token).getSubject();
         } catch (JwtException | IllegalArgumentException e) {
+            log.error("⚠️ Error al extraer username del token: {}", e.getMessage());
             return null;
         }
     }
@@ -58,9 +65,12 @@ public class JwtService {
     /** Verifica si el token es válido para el usuario (coincide username y no está expirado) */
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
-        return username != null
+        boolean valido = username != null
                 && username.equals(userDetails.getUsername())
                 && !isTokenExpired(token);
+
+        log.debug("🧩 Validando token para '{}': {}", username, valido);
+        return valido;
     }
 
     /** Comprueba si el token ha expirado */
@@ -78,3 +88,4 @@ public class JwtService {
                 .getBody();
     }
 }
+

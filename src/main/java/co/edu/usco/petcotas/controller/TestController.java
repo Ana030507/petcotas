@@ -1,5 +1,6 @@
 package co.edu.usco.petcotas.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,5 +24,12 @@ public class TestController {
     @GetMapping("/private")
     public String privateEndpoint() {
         return "🔐 Accediste al endpoint privado con un token JWT válido.";
+    }
+
+    // 👑 Endpoint solo para ADMIN: requiere role ADMIN
+    @GetMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String adminEndpoint() {
+        return "👑 Acceso concedido: eres ADMIN.";
     }
 }

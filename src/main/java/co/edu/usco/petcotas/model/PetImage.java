@@ -2,6 +2,7 @@ package co.edu.usco.petcotas.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 /**
  * Entidad PetImage — representa una imagen adicional de una mascota.
@@ -32,5 +33,6 @@ public class PetImage {
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pet_id", nullable = false)
+    @JsonBackReference
     private Pet pet;
 }

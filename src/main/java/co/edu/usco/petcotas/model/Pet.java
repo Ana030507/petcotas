@@ -5,6 +5,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 
 /**
@@ -59,6 +60,7 @@ public class Pet {
      * Relación 1:N con PetImage — galería de fotos de la mascota.
      */
     @OneToMany(mappedBy = "pet", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private List<PetImage> images = new ArrayList<>();
 
     

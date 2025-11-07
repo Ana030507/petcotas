@@ -149,18 +149,34 @@ public class AdoptionService {
             Adoption saved = adoptionRepository.save(adoption);
             return mapToDetailDto(saved);
 
-        } else { // rejected
+        } else { // rejected -> BORRAR la solicitud y devolver DTO informativo
+            // primero restaurar el pet a available
             Status available = statusRepository.findByNameIgnoreCase("available")
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Estado 'available' no existe"));
 
             pet.setStatus(available);
             petRepository.save(pet);
 
+            // marcamos resolución en el objeto en memoria (no lo persistimos)
             adoption.setStatus("rejected");
             adoption.setResolutionDate(LocalDateTime.now());
             adoption.setAdminNote(dto.getNotes());
-            Adoption saved = adoptionRepository.save(adoption);
-            return mapToDetailDto(saved);
+
+            // construimos el DTO que devolveremos para la respuesta (antes de borrar)
+            AdoptionDetailDto responseDto = new AdoptionDetailDto(
+                    adoption.getId(),
+                    adoption.getStatus(),
+                    adoption.getRequestDate() == null ? null : adoption.getRequestDate().toString(),
+                    adoption.getResolutionDate() == null ? null : adoption.getResolutionDate().toString(),
+                    adoption.getAdminNote(),
+                    pet.getName(),
+                    adoption.getUser() == null ? null : adoption.getUser().getEmail()
+            );
+
+            // eliminamos la adopción de la base de datos (no dejamos registro "rejected")
+            adoptionRepository.delete(adoption);
+
+            return responseDto;
         }
     }
 

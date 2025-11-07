@@ -88,6 +88,10 @@ public class PetService {
         // Resolve status: priority -> statusId, statusName, default
         Status status = resolveStatus(dto.getStatusId(), dto.getStatusName());
         pet.setStatus(status);
+        
+        if (dto.getMainImage() != null && !dto.getMainImage().isBlank()) {
+            pet.setMainImage(dto.getMainImage().trim());
+        }
 
         Pet saved = petRepository.save(pet);
         return PetMapper.toDetail(saved);
@@ -103,6 +107,11 @@ public class PetService {
         if (dto.getStatusId() != null || (dto.getStatusName() != null && !dto.getStatusName().isBlank())) {
             Status s = resolveStatus(dto.getStatusId(), dto.getStatusName());
             pet.setStatus(s);
+        }
+        
+        // Si el DTO trae una nueva mainImage (URL devuelta por /api/images/upload), la usamos.
+        if (dto.getMainImage() != null && !dto.getMainImage().isBlank()) {
+            pet.setMainImage(dto.getMainImage().trim());
         }
 
         Pet updated = petRepository.save(pet);

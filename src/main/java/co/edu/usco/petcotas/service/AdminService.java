@@ -1,5 +1,6 @@
 package co.edu.usco.petcotas.service;
 
+import co.edu.usco.petcotas.dto.AdminCreateRequest;
 import co.edu.usco.petcotas.model.Role;
 import co.edu.usco.petcotas.model.UserEntity;
 import co.edu.usco.petcotas.repository.RoleRepository;
@@ -18,27 +19,26 @@ public class AdminService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
-    // ✅ Crear nuevo admin
-    public UserEntity createAdmin(UserEntity newAdmin) {
+    public UserEntity createAdmin(AdminCreateRequest request) {
         Role adminRole = roleRepository.findByName("ROLE_ADMIN")
-                .orElseThrow(() -> new RuntimeException("El rol ROLE_ADMIN no existe en la base de datos"));
+                .orElseThrow(() -> new RuntimeException("Rol ADMIN no encontrado"));
 
-        newAdmin.setPasswordHash(passwordEncoder.encode(newAdmin.getPasswordHash()));
-        newAdmin.setRole(adminRole);
+        UserEntity admin = UserEntity.builder()
+                .username(request.getUsername())
+                .email(request.getEmail())
+                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .role(adminRole)
+                .build();
 
-        return userRepository.save(newAdmin);
+        return userRepository.save(admin);
     }
 
-    // ✅ Obtener todos los admins
     public List<UserEntity> getAllAdmins() {
-        return userRepository.findAll()
-                .stream()
-                .filter(u -> u.getRole() != null && "ROLE_ADMIN".equals(u.getRole().getName()))
-                .toList();
+        return userRepository.findByRoleName("ROLE_ADMIN");
     }
 
-    // ✅ Eliminar un admin por ID
     public void deleteAdmin(Long id) {
         userRepository.deleteById(id);
     }
 }
+

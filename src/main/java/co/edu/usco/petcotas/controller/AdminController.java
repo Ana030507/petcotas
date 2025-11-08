@@ -1,5 +1,6 @@
 package co.edu.usco.petcotas.controller;
 
+import co.edu.usco.petcotas.dto.AdminCreateRequest;
 import co.edu.usco.petcotas.model.UserEntity;
 import co.edu.usco.petcotas.service.AdminService;
 import lombok.RequiredArgsConstructor;
@@ -10,32 +11,31 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping("/api/admins")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
 
     private final AdminService adminService;
 
-    // ✅ Crear un nuevo administrador (solo accesible por ADMIN)
-    @PreAuthorize("hasRole('ADMIN')")
+    // 🟢 Crear nuevo admin
     @PostMapping("/create")
-    public ResponseEntity<UserEntity> createAdmin(@RequestBody UserEntity newAdmin) {
-        return ResponseEntity.ok(adminService.createAdmin(newAdmin));
+    public ResponseEntity<UserEntity> createAdmin(@RequestBody AdminCreateRequest request) {
+        UserEntity created = adminService.createAdmin(request);
+        return ResponseEntity.status(201).body(created);
     }
 
-    // ✅ Listar todos los administradores
-    @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/list")
-    public ResponseEntity<List<UserEntity>> listAllAdmins() {
+    // 📋 Listar todos los admins
+    @GetMapping
+    public ResponseEntity<List<UserEntity>> getAllAdmins() {
         return ResponseEntity.ok(adminService.getAllAdmins());
     }
 
-    // ✅ Eliminar un administrador por ID
-    @PreAuthorize("hasRole('ADMIN')")
+    // 🗑️ Eliminar un admin
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteAdmin(@PathVariable Long id) {
+    public ResponseEntity<?> deleteAdmin(@PathVariable Long id) {
         adminService.deleteAdmin(id);
-        return ResponseEntity.ok("Administrador eliminado correctamente.");
+        return ResponseEntity.ok("Administrador eliminado correctamente");
     }
 }

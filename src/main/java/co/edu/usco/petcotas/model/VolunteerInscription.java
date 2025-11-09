@@ -41,6 +41,9 @@ public class VolunteerInscription {
      */
     @Column(nullable = false, length = 20)
     private String status;
+    
+    @Column(columnDefinition = "TEXT")
+    private String notes;
 
     /**
      * Fecha de creación de la solicitud.

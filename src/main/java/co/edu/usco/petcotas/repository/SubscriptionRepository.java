@@ -10,13 +10,6 @@ import java.util.Optional;
 @Repository
 public interface SubscriptionRepository extends JpaRepository<Subscription, Long> {
 
-    /**
-     * Buscar suscripción por email (útil para verificar duplicados o para dar de baja).
-     */
     Optional<Subscription> findByEmail(String email);
-
-    /**
-     * Comprobar existencia por email.
-     */
     boolean existsByEmail(String email);
 }

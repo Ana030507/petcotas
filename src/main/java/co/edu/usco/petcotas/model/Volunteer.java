@@ -33,12 +33,17 @@ public class Volunteer {
      */
     @Column(length = 1000)
     private String description;
+    
+
 
     /**
      * Imagen o banner representativo del voluntariado
      */
     @Column(length = 255)
     private String imageUrl;
+    
+    @Column
+    private LocalDateTime date;
 
     /**
      * Fecha en la que fue creado el voluntariado

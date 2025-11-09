@@ -20,12 +20,17 @@ public class AdminService {
     private final PasswordEncoder passwordEncoder;
 
     public UserEntity createAdmin(AdminCreateRequest request) {
+        // evitar duplicados por username
+        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
+            throw new RuntimeException("Ya existe un usuario con ese username");
+        }
+
         Role adminRole = roleRepository.findByName("ROLE_ADMIN")
-                .orElseThrow(() -> new RuntimeException("Rol ADMIN no encontrado"));
+                .orElseThrow(() -> new RuntimeException("Rol ROLE_ADMIN no encontrado"));
 
         UserEntity admin = UserEntity.builder()
                 .username(request.getUsername())
-                .email(request.getEmail())
+                .email(null) // no pedimos email, lo dejamos en null
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .role(adminRole)
                 .build();
@@ -41,4 +46,3 @@ public class AdminService {
         userRepository.deleteById(id);
     }
 }
-

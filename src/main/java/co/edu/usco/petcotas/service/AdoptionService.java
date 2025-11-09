@@ -57,6 +57,11 @@ public class AdoptionService {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
 
+     // después de obtener UserEntity user (por username o userId)
+        if (user.getRole() != null && "ROLE_ADMIN".equalsIgnoreCase(user.getRole().getName())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admins no pueden solicitar adopciones");
+        }
+
         // Crear adopción
         Adoption adoption = Adoption.builder()
                 .pet(pet)

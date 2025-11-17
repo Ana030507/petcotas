@@ -1,6 +1,7 @@
 package co.edu.usco.petcotas.controller;
 
 import co.edu.usco.petcotas.dto.AdminCreateRequest;
+import co.edu.usco.petcotas.dto.AdminDto;
 import co.edu.usco.petcotas.model.UserEntity;
 import co.edu.usco.petcotas.service.AdminService;
 import lombok.RequiredArgsConstructor;
@@ -26,11 +27,12 @@ public class AdminController {
         return ResponseEntity.status(201).body(created);
     }
 
-    // 📋 Listar todos los admins
     @GetMapping
-    public ResponseEntity<List<UserEntity>> getAllAdmins() {
+    public ResponseEntity<List<AdminDto>> getAllAdmins() {
         return ResponseEntity.ok(adminService.getAllAdmins());
     }
+
+
 
     // 🗑️ Eliminar un admin
     @DeleteMapping("/{id}")

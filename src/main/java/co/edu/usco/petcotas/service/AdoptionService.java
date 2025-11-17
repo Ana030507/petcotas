@@ -1,26 +1,24 @@
 package co.edu.usco.petcotas.service;
 
-import co.edu.usco.petcotas.dto.AdoptionDetailDto;
-import co.edu.usco.petcotas.dto.AdoptionRequestDto;
-import co.edu.usco.petcotas.dto.AdoptionStatusUpdateDto;
-import co.edu.usco.petcotas.dto.AdoptionSummaryDto;
+import co.edu.usco.petcotas.dto.*;
 import co.edu.usco.petcotas.model.Adoption;
 import co.edu.usco.petcotas.model.Pet;
-import co.edu.usco.petcotas.model.Status;
 import co.edu.usco.petcotas.model.UserEntity;
 import co.edu.usco.petcotas.repository.AdoptionRepository;
 import co.edu.usco.petcotas.repository.PetRepository;
-import co.edu.usco.petcotas.repository.StatusRepository;
 import co.edu.usco.petcotas.repository.UserRepository;
-import jakarta.transaction.Transactional;
+import co.edu.usco.petcotas.dto.AdoptionSummaryDto;
+import co.edu.usco.petcotas.dto.AdoptionStatusUpdateDto;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
+import java.util.List;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
+
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -29,172 +27,163 @@ public class AdoptionService {
     private final AdoptionRepository adoptionRepository;
     private final PetRepository petRepository;
     private final UserRepository userRepository;
-    private final StatusRepository statusRepository;
 
-    /**
-     * Crea una solicitud de adopción:
-     * - valida que la mascota exista y esté "available"
-     * - pone la mascota en status "pending"
-     * - crea la Adoption con status "pending"
-     */
-    @Transactional
-    public AdoptionDetailDto createAdoption(Long userId, AdoptionRequestDto dto) {
-        Pet pet = petRepository.findById(dto.getPetId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mascota no encontrada"));
+    // --------------------------------------------------------
+    // LISTAR TODAS (ADMIN)
+    // --------------------------------------------------------
+    public Page<AdoptionSummaryDto> listAll(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("requestDate").descending());
+        Page<Adoption> adoptionPage = adoptionRepository.findAll(pageable);
 
-        // Solo permitir solicitud si la mascota está available
-        if (pet.getStatus() == null || !"available".equalsIgnoreCase(pet.getStatus().getName())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mascota no disponible para adopción");
-        }
-
-        // Cambiar pet a pending
-        Status pendingStatus = statusRepository.findByNameIgnoreCase("pending")
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Estado 'pending' no existe"));
-        pet.setStatus(pendingStatus);
-        petRepository.save(pet);
-
-        // Usuario
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
-
-     // después de obtener UserEntity user (por username o userId)
-        if (user.getRole() != null && "ROLE_ADMIN".equalsIgnoreCase(user.getRole().getName())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admins no pueden solicitar adopciones");
-        }
-
-        // Crear adopción
-        Adoption adoption = Adoption.builder()
-                .pet(pet)
-                .user(user)
-                .status("pending")
-                .requestDate(LocalDateTime.now())
-                .build();
-
-        Adoption saved = adoptionRepository.save(adoption);
-        return mapToDetailDto(saved);
+        return adoptionPage.map(this::mapToSummaryDto);
     }
-
-    /**
-     * Lista solicitudes. Si userId == null devuelve todas (admin),
-     * si se pasa userId devuelve solo las de ese usuario.
-     */
+    
     public List<AdoptionSummaryDto> getAllAdoptions(Long userId) {
-        List<Adoption> list;
+        List<Adoption> adoptions;
+
         if (userId == null) {
-            list = adoptionRepository.findAll();
+            // Todas (admin)
+            adoptions = adoptionRepository.findAll(Sort.by("requestDate").descending());
         } else {
-            list = adoptionRepository.findByUser_Id(userId);
+            // Solo las del usuario
+            adoptions = adoptionRepository.findByUserId(userId); // coincide con el Repository
         }
-        return list.stream().map(this::mapToSummaryDto).collect(Collectors.toList());
+
+        return adoptions.stream()
+                .map(this::mapToSummaryDto)
+                .toList();
     }
 
+
+    // --------------------------------------------------------
+    // MAPEO A RESUMEN
+    // --------------------------------------------------------
+    private AdoptionSummaryDto mapToSummaryDto(Adoption adoption) {
+
+        Pet pet = adoption.getPet();
+        UserEntity user = adoption.getUser();
+
+        PetSummaryDto petDto = null;
+        if (pet != null) {
+            petDto = new PetSummaryDto(
+                    pet.getId(),
+                    pet.getName(),
+                    pet.getType(),
+                    pet.getSize(),
+                    pet.getAge(),
+                    pet.getMainImage(),
+                    pet.getShortDescription(),
+                    pet.getStatus() == null ? null : pet.getStatus().toString()
+            );
+        }
+
+        UserSummaryDto userDto = null;
+        if (user != null) {
+            userDto = new UserSummaryDto(
+                    user.getId(),
+                    user.getUsername(),
+                    user.getEmail(),
+                    user.getProfileImageUrl()
+            );
+        }
+
+        return new AdoptionSummaryDto(
+                adoption.getId(),
+                adoption.getStatus(),
+                adoption.getRequestDate() == null ? null : adoption.getRequestDate().toString(),
+                petDto,
+                userDto
+        );
+    }
+
+
+    // --------------------------------------------------------
+    // DETALLES
+    // --------------------------------------------------------
+    public AdoptionDetailDto getDetails(Long id) {
+        Optional<Adoption> opt = adoptionRepository.findById(id);
+
+        if (opt.isEmpty()) {
+            return null;
+        }
+
+        return mapToDetailDto(opt.get());
+    }
+
+    private AdoptionDetailDto mapToDetailDto(Adoption adoption) {
+        UserEntity user = adoption.getUser();
+        Pet pet = adoption.getPet();
+
+        return new AdoptionDetailDto(
+                adoption.getId(),
+                adoption.getStatus(),
+                adoption.getRequestDate() == null ? null : adoption.getRequestDate().toString(),
+                adoption.getResolutionDate() == null ? null : adoption.getResolutionDate().toString(),
+                adoption.getAdminNote(),
+
+                pet == null ? null : new PetSummaryDto(
+                        pet.getId(),
+                        pet.getName(),
+                        pet.getType(),
+                        pet.getSize(),
+                        pet.getAge(),
+                        pet.getMainImage(),
+                        pet.getShortDescription(),
+                        pet.getStatus() == null ? null : pet.getStatus().toString()
+                ),
+
+                user == null ? null : new UserSummaryDto(
+                        user.getId(),
+                        user.getUsername(),
+                        user.getEmail(),
+                        user.getProfileImageUrl()
+                )
+        );
+    }
+    
     /**
-     * Obtiene detalle de una solicitud. Si requesterId == null (admin) no valida propietario.
-     * Si requesterId != null valida que el requester sea el dueño.
+     * Obtener detalle con control de acceso:
+     * - si isAdmin == true devuelve cualquier adopción
+     * - si isAdmin == false verifica que requesterId sea el dueño
      */
     public AdoptionDetailDto getAdoptionById(Long id, Long requesterId, boolean isAdmin) {
-        Adoption a = adoptionRepository.findById(id)
+        Adoption adoption = adoptionRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Solicitud no encontrada"));
 
         if (!isAdmin) {
-            if (!a.getUser().getId().equals(requesterId)) {
+            if (adoption.getUser() == null || !adoption.getUser().getId().equals(requesterId)) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes acceso a esta solicitud");
             }
         }
 
-        return mapToDetailDto(a);
+        return mapToDetailDto(adoption);
     }
 
     /**
-     * Actualiza el estado de una adopción (ADMIN).
-     * - approved: adoption.status = "approved", pet.status = "adopted", pet.adoptedBy = adoption.user
-     * - rejected:  adoption.status = "rejected", pet.status = "available"
+     * Borrar una adopción (acción de admin).
+     * No añade lógica extra: solo borra la entidad.
      */
-    @Transactional
-    public AdoptionDetailDto updateStatus(Long adoptionId, AdoptionStatusUpdateDto dto) {
-        Adoption adoption = adoptionRepository.findById(adoptionId)
+    public void deleteAdoptionByAdmin(Long id) {
+        Adoption adoption = adoptionRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Solicitud no encontrada"));
 
-        String newStatus = dto.getNewStatus();
-        if (newStatus == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Debe indicar el nuevo estado");
-        }
-        String normalized = newStatus.trim().toLowerCase();
-
-        if (!"approved".equals(normalized) && !"rejected".equals(normalized)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Estado inválido (use 'approved' o 'rejected')");
-        }
-
-        // Solo procesar desde pending
-        if (!"pending".equalsIgnoreCase(adoption.getStatus())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Solo se pueden procesar solicitudes en estado 'pending'");
-        }
-
-        Pet pet = adoption.getPet();
-        if (pet == null) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "La adopción no tiene mascota asociada");
-        }
-
-        if ("approved".equals(normalized)) {
-            // Verificar que la mascota aún esté en pending
-            if (pet.getStatus() == null || !"pending".equalsIgnoreCase(pet.getStatus().getName())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La mascota no está en estado 'pending' para ser adoptada");
-            }
-
-            Status adoptedStatus = statusRepository.findByNameIgnoreCase("adopted")
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Estado 'adopted' no existe"));
-
-            pet.setStatus(adoptedStatus);
-            pet.setAdoptedBy(adoption.getUser());
-            petRepository.save(pet);
-
-            adoption.setStatus("approved");
-            adoption.setResolutionDate(LocalDateTime.now());
-            adoption.setAdminNote(dto.getNotes());
-            Adoption saved = adoptionRepository.save(adoption);
-            return mapToDetailDto(saved);
-
-        } else { // rejected -> BORRAR la solicitud y devolver DTO informativo
-            // primero restaurar el pet a available
-            Status available = statusRepository.findByNameIgnoreCase("available")
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Estado 'available' no existe"));
-
-            pet.setStatus(available);
-            petRepository.save(pet);
-
-            // marcamos resolución en el objeto en memoria (no lo persistimos)
-            adoption.setStatus("rejected");
-            adoption.setResolutionDate(LocalDateTime.now());
-            adoption.setAdminNote(dto.getNotes());
-
-            // construimos el DTO que devolveremos para la respuesta (antes de borrar)
-            AdoptionDetailDto responseDto = new AdoptionDetailDto(
-                    adoption.getId(),
-                    adoption.getStatus(),
-                    adoption.getRequestDate() == null ? null : adoption.getRequestDate().toString(),
-                    adoption.getResolutionDate() == null ? null : adoption.getResolutionDate().toString(),
-                    adoption.getAdminNote(),
-                    pet.getName(),
-                    adoption.getUser() == null ? null : adoption.getUser().getEmail()
-            );
-
-            // eliminamos la adopción de la base de datos (no dejamos registro "rejected")
-            adoptionRepository.delete(adoption);
-
-            return responseDto;
-        }
+        adoptionRepository.delete(adoption);
     }
 
     /**
-     * Cancela la adopción por parte del usuario (solo si es owner y está en pending).
-     * - elimina la Adoption y devuelve el pet a "available".
+     * Cancelar adopción por parte del usuario dueño (solo si está en 'pending').
+     * - Verifica que requester sea el dueño
+     * - Verifica estado 'pending' (sensible para evitar inconsistencias)
+     * - Borra la adopción
+     *
+     * Nota: aquí no cambiamos el estado de la mascota para evitar añadir lógica extra.
+     * Si quieres que el pet vuelva a 'available', lo agregamos después con statusRepository.
      */
-    @Transactional
-    public void cancelAdoptionByUser(Long adoptionId, Long userId) {
-        Adoption adoption = adoptionRepository.findById(adoptionId)
+    public void cancelAdoptionByUser(Long id, Long userId) {
+        Adoption adoption = adoptionRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Solicitud no encontrada"));
 
-        if (!adoption.getUser().getId().equals(userId)) {
+        if (adoption.getUser() == null || !adoption.getUser().getId().equals(userId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No puedes cancelar esta solicitud");
         }
 
@@ -202,73 +191,74 @@ public class AdoptionService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Solo se pueden cancelar solicitudes en estado 'pending'");
         }
 
-        // devolver pet a available
-        Pet pet = adoption.getPet();
-        if (pet != null) {
-            Status available = statusRepository.findByNameIgnoreCase("available")
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Estado 'available' no existe"));
-            pet.setStatus(available);
-            petRepository.save(pet);
-        }
-
         adoptionRepository.delete(adoption);
     }
 
-    /**
-     * Borrar una adopción por parte del admin.
-     * Si la adopción estaba 'pending' la mascota pasará a 'available'.
-     * Si la adopción estaba 'approved' y la mascota fue marcada adoptada por esa solicitud,
-     * se revierte adoptedBy y se pone disponible (esto es una operación invasiva; admin debe usarla con cuidado).
-     */
-    @Transactional
-    public void deleteAdoptionByAdmin(Long adoptionId) {
-        Adoption adoption = adoptionRepository.findById(adoptionId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Solicitud no encontrada"));
+
+    // --------------------------------------------------------
+    // SOLICITAR ADOPCIÓN (USUARIO)
+    // --------------------------------------------------------
+    public AdoptionDetailDto requestAdoption(Long petId, Long userId) {
+
+        Pet pet = petRepository.findById(petId)
+                .orElseThrow(() -> new RuntimeException("Mascota no encontrada"));
+
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        Adoption adoption = new Adoption();
+        adoption.setUser(user);
+        adoption.setPet(pet);
+        adoption.setStatus("pending");
+        adoption.setRequestDate(LocalDateTime.now());
+
+        adoptionRepository.save(adoption);
+
+        return mapToDetailDto(adoption);
+    }
+
+    // --------------------------------------------------------
+    // ACTUALIZAR ESTADO (ACEPTAR | RECHAZAR)
+    // --------------------------------------------------------
+    public AdoptionDetailDto updateStatus(Long id, AdoptionStatusUpdateDto dto) {
+
+        Adoption adoption = adoptionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Solicitud no encontrada"));
 
         Pet pet = adoption.getPet();
-        if (pet != null) {
-            if ("pending".equalsIgnoreCase(adoption.getStatus())) {
-                Status available = statusRepository.findByNameIgnoreCase("available")
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Estado 'available' no existe"));
-                pet.setStatus(available);
-                petRepository.save(pet);
-            } else if ("approved".equalsIgnoreCase(adoption.getStatus())) {
-                // Si la adopción fue aprobada y la mascota está adoptada por el mismo usuario, revertimos
-                if (pet.getAdoptedBy() != null && adoption.getUser() != null &&
-                        pet.getAdoptedBy().getId().equals(adoption.getUser().getId())) {
-                    pet.setAdoptedBy(null);
-                    Status available = statusRepository.findByNameIgnoreCase("available")
-                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Estado 'available' no existe"));
-                    pet.setStatus(available);
-                    petRepository.save(pet);
-                }
-            }
+        String currentStatus = adoption.getStatus();
+        String newStatus = dto.getNewStatus();
+
+        // Solo se puede actualizar si está pendiente
+        if (!"pending".equalsIgnoreCase(currentStatus)) {
+            throw new RuntimeException("Solo se pueden actualizar solicitudes pendientes");
         }
 
-        adoptionRepository.delete(adoption);
+        // ---------------- ACCEPTED ----------------
+        if ("accepted".equalsIgnoreCase(newStatus) || "approved".equalsIgnoreCase(newStatus)) {
+            adoption.setStatus("accepted");
+            adoption.setResolutionDate(LocalDateTime.now());
+            adoption.setAdminNote(dto.getNotes());
+
+            adoptionRepository.save(adoption);
+            return mapToDetailDto(adoption);
+        }
+
+        // ---------------- REJECTED ----------------
+        if ("rejected".equalsIgnoreCase(newStatus)) {
+            adoption.setStatus("rejected");
+            adoption.setResolutionDate(LocalDateTime.now());
+            adoption.setAdminNote(dto.getNotes());
+
+            // Construimos el DTO antes de borrar
+            AdoptionDetailDto responseDto = mapToDetailDto(adoption);
+
+            // Eliminamos la adopción
+            adoptionRepository.delete(adoption);
+            return responseDto;
+        }
+
+        throw new RuntimeException("Estado inválido");
     }
 
-    /* ---------------------- Helpers de mapeo a DTOs ---------------------- */
-
-    private AdoptionSummaryDto mapToSummaryDto(Adoption a) {
-        return new AdoptionSummaryDto(
-                a.getId(),
-                a.getPet() == null ? null : a.getPet().getName(),
-                a.getUser() == null ? null : a.getUser().getUsername(),
-                a.getStatus(),
-                a.getRequestDate() == null ? null : a.getRequestDate().toString()
-        );
-    }
-
-    private AdoptionDetailDto mapToDetailDto(Adoption a) {
-        return new AdoptionDetailDto(
-                a.getId(),
-                a.getStatus(),
-                a.getRequestDate() == null ? null : a.getRequestDate().toString(),
-                a.getResolutionDate() == null ? null : a.getResolutionDate().toString(),
-                a.getAdminNote(),
-                a.getPet() == null ? null : a.getPet().getName(),
-                a.getUser() == null ? null : a.getUser().getEmail()
-        );
-    }
 }

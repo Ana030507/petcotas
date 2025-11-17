@@ -1,6 +1,7 @@
 package co.edu.usco.petcotas.service;
 
 import co.edu.usco.petcotas.dto.AdminCreateRequest;
+import co.edu.usco.petcotas.dto.AdminDto;
 import co.edu.usco.petcotas.model.Role;
 import co.edu.usco.petcotas.model.UserEntity;
 import co.edu.usco.petcotas.repository.RoleRepository;
@@ -38,9 +39,16 @@ public class AdminService {
         return userRepository.save(admin);
     }
 
-    public List<UserEntity> getAllAdmins() {
-        return userRepository.findByRoleName("ROLE_ADMIN");
+    public List<AdminDto> getAllAdmins() {
+        return userRepository.findByRoleName("ROLE_ADMIN")
+                .stream()
+                .map(u -> AdminDto.builder()
+                        .id(u.getId())
+                        .username(u.getUsername())
+                        .build()
+                ).toList();
     }
+
 
     public void deleteAdmin(Long id) {
         userRepository.deleteById(id);

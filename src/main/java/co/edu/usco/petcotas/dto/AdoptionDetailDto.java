@@ -2,7 +2,6 @@ package co.edu.usco.petcotas.dto;
 
 import lombok.*;
 
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -12,6 +11,7 @@ public class AdoptionDetailDto {
     private String createdAt;
     private String reviewedAt;
     private String notes;
-    private String petName;
-    private String userEmail;
+
+    private PetSummaryDto pet;
+    private UserSummaryDto user;
 }

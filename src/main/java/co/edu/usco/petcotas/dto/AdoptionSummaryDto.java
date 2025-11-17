@@ -8,8 +8,8 @@ import lombok.*;
 @AllArgsConstructor
 public class AdoptionSummaryDto {
     private Long id;
-    private String petName;
-    private String username;
     private String status;
     private String createdAt;
+    private PetSummaryDto pet;     // ahora embebido
+    private UserSummaryDto user;
 }

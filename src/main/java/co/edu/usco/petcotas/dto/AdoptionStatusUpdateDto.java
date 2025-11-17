@@ -7,6 +7,6 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AdoptionStatusUpdateDto {
-    private String newStatus; // "approved" o "rejected"
+    private String NewStatus; // "approved" o "rejected"
     private String notes;     // opcional
 }

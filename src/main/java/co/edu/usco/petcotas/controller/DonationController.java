@@ -48,7 +48,6 @@ public class DonationController {
 
     // Total donado (solo ADMIN)
     @GetMapping("/total")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, BigDecimal>> getTotal() {
         BigDecimal total = donationService.getTotalDonatedAmount();
         return ResponseEntity.ok(Map.of("totalDonated", total));

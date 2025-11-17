@@ -2,12 +2,13 @@ package co.edu.usco.petcotas.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
  * Entidad PetImage — representa una imagen adicional de una mascota.
  * Cada mascota puede tener varias imágenes asociadas.
  */
+
 @Entity
 @Table(name = "pet_images")
 @Data
@@ -33,6 +34,6 @@ public class PetImage {
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pet_id", nullable = false)
-    @JsonBackReference
+    @JsonIgnoreProperties({"images", "hibernateLazyInitializer"})
     private Pet pet;
 }

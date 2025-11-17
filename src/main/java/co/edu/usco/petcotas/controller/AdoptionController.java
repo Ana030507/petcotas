@@ -17,6 +17,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 
@@ -63,7 +64,7 @@ public class AdoptionController {
     @PostMapping
     public ResponseEntity<AdoptionDetailDto> createAdoption(@RequestBody AdoptionRequestDto dto) {
         UserEntity user = currentUserOrThrow();
-        AdoptionDetailDto created = adoptionService.createAdoption(user.getId(), dto);
+        AdoptionDetailDto created = adoptionService.requestAdoption(dto.getPetId(), user.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
@@ -83,6 +84,7 @@ public class AdoptionController {
             return ResponseEntity.ok(mine);
         }
     }
+
 
     @GetMapping("/{id}")
     public ResponseEntity<AdoptionDetailDto> getById(@PathVariable Long id) {

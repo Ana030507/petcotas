@@ -3,19 +3,21 @@ package co.edu.usco.petcotas.service;
 import co.edu.usco.petcotas.dto.*;
 import co.edu.usco.petcotas.model.Adoption;
 import co.edu.usco.petcotas.model.Pet;
+import co.edu.usco.petcotas.model.Status;
 import co.edu.usco.petcotas.model.UserEntity;
 import co.edu.usco.petcotas.repository.AdoptionRepository;
 import co.edu.usco.petcotas.repository.PetRepository;
 import co.edu.usco.petcotas.repository.UserRepository;
 import co.edu.usco.petcotas.dto.AdoptionSummaryDto;
 import co.edu.usco.petcotas.dto.AdoptionStatusUpdateDto;
+import co.edu.usco.petcotas.repository.StatusRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
-
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -27,6 +29,7 @@ public class AdoptionService {
     private final AdoptionRepository adoptionRepository;
     private final PetRepository petRepository;
     private final UserRepository userRepository;
+    private final StatusRepository statusRepository;
 
     // --------------------------------------------------------
     // LISTAR TODAS (ADMIN)
@@ -198,13 +201,29 @@ public class AdoptionService {
     // --------------------------------------------------------
     // SOLICITAR ADOPCIÓN (USUARIO)
     // --------------------------------------------------------
+    @Transactional
     public AdoptionDetailDto requestAdoption(Long petId, Long userId) {
 
         Pet pet = petRepository.findById(petId)
                 .orElseThrow(() -> new RuntimeException("Mascota no encontrada"));
 
+        // evita doble solicitud: si ya está pending o adopted -> error
+        String petStatusName = pet.getStatus() == null ? null : pet.getStatus().getName();
+        if (petStatusName != null && petStatusName.equalsIgnoreCase("pending")) {
+            throw new RuntimeException("Ya existe una solicitud para esta mascota");
+        }
+        if (petStatusName != null && petStatusName.equalsIgnoreCase("adopted")) {
+            throw new RuntimeException("Mascota ya adoptada");
+        }
+
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        // marcar pet como pending (buscar Status)
+        Status pendingStatus = statusRepository.findByNameIgnoreCase("pending")
+                .orElseThrow(() -> new RuntimeException("Status 'pending' no encontrado en DB"));
+        pet.setStatus(pendingStatus);
+        petRepository.save(pet);
 
         Adoption adoption = new Adoption();
         adoption.setUser(user);
@@ -216,10 +235,10 @@ public class AdoptionService {
 
         return mapToDetailDto(adoption);
     }
-
     // --------------------------------------------------------
     // ACTUALIZAR ESTADO (ACEPTAR | RECHAZAR)
     // --------------------------------------------------------
+    @Transactional
     public AdoptionDetailDto updateStatus(Long id, AdoptionStatusUpdateDto dto) {
 
         Adoption adoption = adoptionRepository.findById(id)
@@ -229,7 +248,6 @@ public class AdoptionService {
         String currentStatus = adoption.getStatus();
         String newStatus = dto.getNewStatus();
 
-        // Solo se puede actualizar si está pendiente
         if (!"pending".equalsIgnoreCase(currentStatus)) {
             throw new RuntimeException("Solo se pueden actualizar solicitudes pendientes");
         }
@@ -239,6 +257,13 @@ public class AdoptionService {
             adoption.setStatus("accepted");
             adoption.setResolutionDate(LocalDateTime.now());
             adoption.setAdminNote(dto.getNotes());
+
+            // marcar mascota como adopted y asignar adoptante
+            Status adoptedStatus = statusRepository.findByNameIgnoreCase("adopted")
+                    .orElseThrow(() -> new RuntimeException("Status 'adopted' no encontrado en DB"));
+            pet.setStatus(adoptedStatus);
+            pet.setAdoptedBy(adoption.getUser());
+            petRepository.save(pet);
 
             adoptionRepository.save(adoption);
             return mapToDetailDto(adoption);
@@ -250,15 +275,19 @@ public class AdoptionService {
             adoption.setResolutionDate(LocalDateTime.now());
             adoption.setAdminNote(dto.getNotes());
 
-            // Construimos el DTO antes de borrar
+            // dejar mascota disponible otra vez
+            Status availableStatus = statusRepository.findByNameIgnoreCase("available")
+                    .orElseThrow(() -> new RuntimeException("Status 'available' no encontrado en DB"));
+            pet.setStatus(availableStatus);
+            petRepository.save(pet);
+
             AdoptionDetailDto responseDto = mapToDetailDto(adoption);
 
-            // Eliminamos la adopción
+            // eliminamos la adopción (según tu lógica previa)
             adoptionRepository.delete(adoption);
             return responseDto;
         }
 
         throw new RuntimeException("Estado inválido");
     }
-
 }

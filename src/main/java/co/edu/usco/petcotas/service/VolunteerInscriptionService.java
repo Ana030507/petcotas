@@ -39,11 +39,23 @@ public class VolunteerInscriptionService {
          throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No es posible inscribirse: voluntariado finalizado");
      }
 
-     boolean exists = inscriptionRepository.findByUser(user).stream()
-             .anyMatch(i -> i.getVolunteer().getId().equals(volunteerId));
-     if (exists) {
-         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ya estás inscrito a este voluntariado");
+  // Buscar si ya existe inscripción de este usuario a este voluntariado
+     List<VolunteerInscription> existingList = inscriptionRepository.findByUser(user).stream()
+             .filter(i -> i.getVolunteer().getId().equals(volunteerId))
+             .toList();
+
+     if (!existingList.isEmpty()) {
+         VolunteerInscription existing = existingList.get(0);
+
+         // Si está pending o accepted → bloquear reinscripción
+         if (!existing.getStatus().equalsIgnoreCase("rejected")) {
+             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ya estás inscrito a este voluntariado");
+         }
+
+         // Si está rejected → permitir reinscribirse eliminando la anterior
+         inscriptionRepository.delete(existing);
      }
+
 
      VolunteerInscription insc = VolunteerInscription.builder()
              .user(user)

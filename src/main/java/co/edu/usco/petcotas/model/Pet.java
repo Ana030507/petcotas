@@ -6,6 +6,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 
 
 /**
@@ -67,6 +69,7 @@ public class Pet {
     // Usuario que adoptó la mascota (puede ser null)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "adopted_by_id")
+    @JsonIgnore
     private UserEntity adoptedBy;
 
     @PrePersist

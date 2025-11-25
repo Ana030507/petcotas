@@ -1,6 +1,7 @@
 package co.edu.usco.petcotas.service;
 
 import co.edu.usco.petcotas.dto.*;
+import co.edu.usco.petcotas.dto.UserProfileDto;
 import co.edu.usco.petcotas.model.*;
 import co.edu.usco.petcotas.mapper.*;
 import co.edu.usco.petcotas.repository.*;
@@ -8,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import java.util.Optional;
+
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -137,4 +140,12 @@ public class UserProfileService {
                 .notes(i.getNotes())
                 .build();
     }
+    
+    public UserProfileDto getProfileById(Long id) {
+        UserEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        return buildProfileDto(user); 
+    }
+
 }

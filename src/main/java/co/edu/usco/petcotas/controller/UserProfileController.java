@@ -33,4 +33,13 @@ public class UserProfileController {
         UserProfileDto dto = userProfileService.updateMyProfile(principal.getName(), update);
         return ResponseEntity.ok(dto);
     }
+    
+ // Obtener perfil de cualquier usuario (solo admin)
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserProfileDto> getUserProfileById(@PathVariable Long id) {
+        UserProfileDto dto = userProfileService.getProfileById(id);
+        return ResponseEntity.ok(dto);
+    }
+
 }
